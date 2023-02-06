@@ -1,0 +1,1 @@
+Get-ADUser -Filter * -properties pwdLastSet | select samAccountName,@{n="Last change";e={[DateTime]::FromFileTime($_.pwdLastSet)}},@{n="Next Change";e={[DateTime]::FromFileTime($_."msDS-UserPasswordExpiryTimeComputed")}}
