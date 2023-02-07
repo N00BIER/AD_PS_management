@@ -1,3 +1,5 @@
+## Sensitive Group Report ##
+
 $secgroups=@("Enterprise admins","Schema admins","Domain admins","Account operators","Server operators","Print operators","DHCP Administrators","DNSAdmins")
 
 try { 
