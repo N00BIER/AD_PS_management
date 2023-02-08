@@ -1,31 +1,31 @@
 param(
     [Parameter(Mandatory=$true, Position=0)][ValidateNotNullOrEmpty()] [string] $Client,
-    [Parameter(Mandatory=$true, Position=1)][ValidateNotNullOrEmpty()] [string] $Matter,
+    [Parameter(Mandatory=$true, Position=1)][ValidateNotNullOrEmpty()] [string] $Matter
     )
 
 $Domain = "xyz.local"
 $ADPath = "OU=Access Rights,DC=XYZ,DC=LOCAL"
-$ClientPath = "\\Storage\Cases\$Client"
-$MatterPath = "\\Storage\Cases\$Client\$Matter"
+$ClientPath = "C:\Users\$Client"
+$MatterPath = "C:\Users\$Client\$Matter"
 
 
 # Adding the AD groups
-New-ADGroup 
-    -Name "$Client.$MatterRW" 
-    -SamAccountName "$Client.$MatterRW" 
-    -GroupCategory Security 
-    -GroupScope Global 
-    -DisplayName "$Client.$Matter Read-Write Access" 
-    -Path $ADPath 
+New-ADGroup `
+    -Name $("$Client"+"RW") `
+    -SamAccountName $("$Client"+"RW") `
+    -GroupCategory Security `
+    -GroupScope Global `
+    -DisplayName "$Client Read-Write Access" `
+    -Path $ADPath `
     -Description "Members of this group have read-write access"
 
-New-ADGroup 
-    -Name "$Client.$MatterR" 
-    -SamAccountName "$Client.$MatterR" 
-    -GroupCategory Security 
-    -GroupScope Global 
-    -DisplayName "$Client.$Matter Read Access" 
-    -Path $ADPath
+New-ADGroup `
+    -Name $("$Client"+"R") `
+    -SamAccountName $("$Client"+"R") `
+    -GroupCategory Security `
+    -GroupScope Global `
+    -DisplayName "$Client Read Access" `
+    -Path $ADPath `
     -Description "Members of this group have read access"
 
 
@@ -42,25 +42,16 @@ get-adobject -searchbase $ADPath -ldapfilter {(objectclass=group)}
 $acl.SetAccessRuleProtection($True, $False)
 
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Administrators","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client"
 
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\Domain Admins","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client"
 
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Litigation Support Administrators","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$($Client+"R")","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client"
 
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Litigation Support Service","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$Client.$MatterR","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$Client.$MatterRW","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-# set new permissions
-$acl | Set-Acl -Path $ClientPath
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$($Client+"RW")","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client"
 
 # Create new folder
 New-Item -Path $MatterPath -ItemType Directory
@@ -75,22 +66,13 @@ get-adobject -searchbase $ADPath -ldapfilter {(objectclass=group)}
 $acl.SetAccessRuleProtection($True, $False)
 
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Administrators","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client\$Matter"
 
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\Domain Admins","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client\$Matter"
 
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Litigation Support Administrators","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$($Client+"R")","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client\$Matter"
 
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Litigation Support Service","FullControl", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$Client.$MatterR","ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$Client.$MatterRW","Modfiy", "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-
-# set new permissions
-$acl | Set-Acl -Path $MatterPath
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$Domain\$($Client+"RW")","Modify", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($rule) | set-acl "\\DC-1\Users\$Client\$Matter"
